@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import "./App.css";
 
 export default function App() {
   const { data, isLoading } = useQuery({
