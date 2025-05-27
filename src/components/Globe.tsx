@@ -4,11 +4,14 @@ import { labels } from "../utils/coordinates";
 import type { Label, Picture } from "../utils/types";
 // import { useQuery } from "@tanstack/react-query";
 import { pictures } from "../utils/pictures";
+import Form from "./Form";
+import { Plus } from "lucide-react";
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
   const [modalLabel, setModalLabel] = useState<Label | null>(null);
   const [modalPicture, setModalPicture] = useState<Picture | null>(null);
+  const [modalIcon, setModalIcon] = useState<boolean>(false);
 
   useEffect(() => {
     if (!globeRef.current) return;
@@ -56,6 +59,22 @@ export default function GlobeComponent() {
             onClick={(e) => e.stopPropagation()}
           >
             <img src={modalPicture.src} alt={modalPicture.title} />
+          </div>
+        </div>
+      )}
+      <button
+        className="absolute top-8 right-8 z-50 p-2 bg-white rounded-full cursor-pointer"
+        onClick={() => setModalIcon(true)}
+      >
+        <Plus />
+      </button>
+      {modalIcon && (
+        <div className="fixed inset-0 z-50" onClick={() => setModalIcon(false)}>
+          <div
+            className="absolute top-20 right-8 bg-white p-6 rounded shadow pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Form />
           </div>
         </div>
       )}
