@@ -1,11 +1,18 @@
 import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
-import { labels } from "../utils/coordinates";
+// import { labels } from "../utils/coordinates";
 import type { Label, Picture } from "../utils/types";
 // import { useQuery } from "@tanstack/react-query";
-import { pictures } from "../utils/pictures";
+// import { pictures } from "../utils/pictures";
 import Form from "./Form";
 import { Plus } from "lucide-react";
+
+type Image = {
+  name: string;
+  data: string;
+  lat: number;
+  lng: number;
+};
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
@@ -26,17 +33,36 @@ export default function GlobeComponent() {
       setModalLabel(label ? (label as Label) : null)
     );
     myGlobe.onLabelClick((label) => {
-      const l = label as Label;
-      const picture = pictures.find((p) => p.title === l.text);
-      if (picture) {
-        setModalPicture(picture);
+      const images = JSON.parse(localStorage.getItem("files") || "[]");
+      const labelImages = images.filter(
+        (img: Image) =>
+          img.lat === (label as Label).lat && img.lng === (label as Label).lng
+      );
+      if (labelImages.length > 0) {
+        setModalPicture(labelImages[0]);
       }
     });
-    myGlobe.labelsData(labels);
+    // myGlobe.labelsData(labels);
     myGlobe.labelColor((label) => (label as Label).labelColor || "orange");
     myGlobe.labelSize((label) => (label as Label).labelSize || 1);
     myGlobe.labelDotRadius((label) => (label as Label).labelDotRadius || 1);
     myGlobe.labelsTransitionDuration(3000);
+    const locationName = localStorage.getItem("locationName");
+    const description = localStorage.getItem("description");
+    const longitude = localStorage.getItem("longitude");
+    const latitude = localStorage.getItem("latitude");
+    const files = localStorage.getItem("files");
+    if (locationName && description && longitude && latitude && files) {
+      myGlobe.labelsData([
+        {
+          lat: Number(latitude),
+          lng: Number(longitude),
+          text: locationName,
+          picture: JSON.parse(files),
+          description: description,
+        },
+      ]);
+    }
   }, []);
 
   return (
@@ -58,7 +84,7 @@ export default function GlobeComponent() {
             className="bg-white p-4 rounded shadow pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <img src={modalPicture.src} alt={modalPicture.title} />
+            <img src={modalPicture.data} alt={modalPicture.name} />
           </div>
         </div>
       )}

@@ -9,6 +9,6 @@ export type Label = {
 };
 
 export type Picture = {
-  title: string;
-  src: string;
+  name: string;
+  data: string;
 };
