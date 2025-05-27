@@ -1,11 +1,14 @@
 import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
 import { labels } from "../utils/coordinates";
-import type { Label } from "../utils/types";
+import type { Label, Picture } from "../utils/types";
+// import { useQuery } from "@tanstack/react-query";
+import { pictures } from "../utils/pictures";
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
   const [modalLabel, setModalLabel] = useState<Label | null>(null);
+  const [modalPicture, setModalPicture] = useState<Picture | null>(null);
 
   useEffect(() => {
     if (!globeRef.current) return;
@@ -19,6 +22,13 @@ export default function GlobeComponent() {
     myGlobe.onLabelHover((label) =>
       setModalLabel(label ? (label as Label) : null)
     );
+    myGlobe.onLabelClick((label) => {
+      const l = label as Label;
+      const picture = pictures.find((p) => p.title === l.text);
+      if (picture) {
+        setModalPicture(picture);
+      }
+    });
     myGlobe.labelsData(labels);
     myGlobe.labelColor((label) => (label as Label).labelColor || "orange");
     myGlobe.labelSize((label) => (label as Label).labelSize || 1);
@@ -34,6 +44,19 @@ export default function GlobeComponent() {
           <h2 className="text-lg font-bold mb-2">{modalLabel.text}</h2>
           <p>Lat: {modalLabel.lat}</p>
           <p>Lng: {modalLabel.lng}</p>
+        </div>
+      )}
+      {modalPicture && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setModalPicture(null)}
+        >
+          <div
+            className="bg-white p-4 rounded shadow pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img src={modalPicture.src} alt={modalPicture.title} />
+          </div>
         </div>
       )}
     </>

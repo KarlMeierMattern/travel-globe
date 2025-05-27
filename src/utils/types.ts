@@ -5,4 +5,10 @@ export type Label = {
   labelColor?: string;
   labelSize?: number;
   labelDotRadius?: number;
+  picture?: Picture[];
+};
+
+export type Picture = {
+  title: string;
+  src: string;
 };

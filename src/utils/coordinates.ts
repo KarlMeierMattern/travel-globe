@@ -2,13 +2,6 @@
 
 export const labels = [
   {
-    lat: -29.8587,
-    lng: 31.0218,
-    text: "Durban",
-    labelSize: 0.5,
-    labelDotRadius: 0.5,
-  },
-  {
     lat: -27.39,
     lng: 32.01,
     text: "Manyoni",
