@@ -1,18 +1,8 @@
 import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
-// import { labels } from "../utils/coordinates";
-import type { Label, Picture } from "../utils/types";
-// import { useQuery } from "@tanstack/react-query";
-// import { pictures } from "../utils/pictures";
-import Form from "./Form";
 import { Plus } from "lucide-react";
-
-type Image = {
-  name: string;
-  data: string;
-  lat: number;
-  lng: number;
-};
+import Form from "./Form";
+import type { Label, Picture, Image, FormSubmission } from "../utils/types";
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
@@ -23,46 +13,37 @@ export default function GlobeComponent() {
   useEffect(() => {
     if (!globeRef.current) return;
     const myGlobe = new Globe(globeRef.current);
+    myGlobe.labelColor((label) => (label as Label).labelColor || "orange");
+    myGlobe.labelSize((label) => (label as Label).labelSize || 1);
+    myGlobe.labelDotRadius((label) => (label as Label).labelDotRadius || 1);
+    myGlobe.labelsTransitionDuration(3000);
     myGlobe.globeImageUrl(
       "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
     );
     myGlobe.backgroundImageUrl(
       "https://unpkg.com/three-globe/example/img/night-sky.png"
     );
+    const formData = JSON.parse(localStorage.getItem("formData") || "[]");
+    if (Array.isArray(formData) && formData.length > 0) {
+      myGlobe.labelsData(
+        formData.map((entry: FormSubmission) => ({
+          text: entry.locationName,
+          description: entry.description,
+          lat: Number(entry.latitude),
+          lng: Number(entry.longitude),
+          picture: entry.files,
+        }))
+      );
+    }
     myGlobe.onLabelHover((label) =>
       setModalLabel(label ? (label as Label) : null)
     );
     myGlobe.onLabelClick((label) => {
-      const images = JSON.parse(localStorage.getItem("files") || "[]");
-      const labelImages = images.filter(
-        (img: Image) =>
-          img.lat === (label as Label).lat && img.lng === (label as Label).lng
-      );
-      if (labelImages.length > 0) {
-        setModalPicture(labelImages[0]);
+      const labelData = label as Label;
+      if (labelData.picture && labelData.picture.length > 0) {
+        setModalPicture(labelData.picture[0]);
       }
     });
-    // myGlobe.labelsData(labels);
-    myGlobe.labelColor((label) => (label as Label).labelColor || "orange");
-    myGlobe.labelSize((label) => (label as Label).labelSize || 1);
-    myGlobe.labelDotRadius((label) => (label as Label).labelDotRadius || 1);
-    myGlobe.labelsTransitionDuration(3000);
-    const locationName = localStorage.getItem("locationName");
-    const description = localStorage.getItem("description");
-    const longitude = localStorage.getItem("longitude");
-    const latitude = localStorage.getItem("latitude");
-    const files = localStorage.getItem("files");
-    if (locationName && description && longitude && latitude && files) {
-      myGlobe.labelsData([
-        {
-          lat: Number(latitude),
-          lng: Number(longitude),
-          text: locationName,
-          picture: JSON.parse(files),
-          description: description,
-        },
-      ]);
-    }
   }, []);
 
   return (
