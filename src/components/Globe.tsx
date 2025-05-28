@@ -2,12 +2,13 @@ import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import Form from "./Form";
-import type { Label, Picture, Image, FormSubmission } from "../utils/types";
+import type { Label, Picture, FormSubmission } from "../utils/types";
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
   const [modalLabel, setModalLabel] = useState<Label | null>(null);
-  const [modalPicture, setModalPicture] = useState<Picture | null>(null);
+  const [modalPictures, setModalPictures] = useState<Picture[] | null>(null);
+  const [currentPicIdx, setCurrentPicIdx] = useState(0);
   const [modalIcon, setModalIcon] = useState<boolean>(false);
 
   useEffect(() => {
@@ -41,10 +42,23 @@ export default function GlobeComponent() {
     myGlobe.onLabelClick((label) => {
       const labelData = label as Label;
       if (labelData.picture && labelData.picture.length > 0) {
-        setModalPicture(labelData.picture[0]);
+        setModalPictures(labelData.picture);
+        setCurrentPicIdx(0);
       }
     });
   }, []);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!modalPictures) return;
+    setCurrentPicIdx((idx) => (idx === 0 ? modalPictures.length - 1 : idx - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!modalPictures) return;
+    setCurrentPicIdx((idx) => (idx === modalPictures.length - 1 ? 0 : idx + 1));
+  };
 
   return (
     <>
@@ -56,16 +70,37 @@ export default function GlobeComponent() {
           <p>Lng: {modalLabel.lng}</p>
         </div>
       )}
-      {modalPicture && (
+      {modalPictures && modalPictures.length > 0 && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-          onClick={() => setModalPicture(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50"
+          onClick={() => setModalPictures(null)}
         >
           <div
-            className="bg-white p-4 rounded shadow pointer-events-auto"
+            className="bg-white p-4 rounded shadow pointer-events-auto flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img src={modalPicture.data} alt={modalPicture.name} />
+            <img
+              src={modalPictures[currentPicIdx].data}
+              alt={modalPictures[currentPicIdx].name}
+              className="max-w-xs max-h-96 mb-2"
+            />
+            <div className="flex gap-4 items-center">
+              <button
+                onClick={handlePrev}
+                className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 cursor-pointer"
+              >
+                Prev
+              </button>
+              <span>
+                {currentPicIdx + 1} / {modalPictures.length}
+              </span>
+              <button
+                onClick={handleNext}
+                className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}

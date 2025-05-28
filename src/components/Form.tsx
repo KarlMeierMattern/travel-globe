@@ -61,21 +61,36 @@ export default function Form() {
         existingData = [];
       }
 
-      // Add new submission to array
-      const newSubmission: FormSubmission = {
-        locationName: formData.locationName.toLowerCase(),
-        description: formData.description.toLowerCase(),
-        longitude: formData.longitude,
-        latitude: formData.latitude,
-        files: processedFiles,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Store updated array
-      localStorage.setItem(
-        "formData",
-        JSON.stringify([...existingData, newSubmission])
+      // Find if a submission with same lat/lng exists
+      const matchIdx = existingData.findIndex(
+        (entry) =>
+          entry.latitude === formData.latitude &&
+          entry.longitude === formData.longitude
       );
+
+      if (matchIdx !== -1) {
+        // Merge images into existing entry
+        existingData[matchIdx].files = [
+          ...existingData[matchIdx].files,
+          ...processedFiles,
+        ];
+        existingData[matchIdx].timestamp = new Date().toISOString();
+        localStorage.setItem("formData", JSON.stringify(existingData));
+      } else {
+        // Add new submission
+        const newSubmission: FormSubmission = {
+          locationName: formData.locationName.toLowerCase(),
+          description: formData.description.toLowerCase(),
+          longitude: formData.longitude,
+          latitude: formData.latitude,
+          files: processedFiles,
+          timestamp: new Date().toISOString(),
+        };
+        localStorage.setItem(
+          "formData",
+          JSON.stringify([...existingData, newSubmission])
+        );
+      }
     };
 
     // Process files and store everything
@@ -205,7 +220,7 @@ export default function Form() {
           ))}
         <button
           type="submit"
-          className="bg-blue-500 text-white p-2 rounded mt-4"
+          className="bg-blue-500 text-white p-2 rounded mt-4 cursor-pointer"
         >
           Add
         </button>
