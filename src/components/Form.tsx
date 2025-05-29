@@ -75,6 +75,9 @@ export default function Form() {
           ...processedFiles,
         ];
         existingData[matchIdx].timestamp = new Date().toISOString();
+        existingData[matchIdx].locationName =
+          formData.locationName.toLowerCase();
+        existingData[matchIdx].description = formData.description.toLowerCase();
         localStorage.setItem("formData", JSON.stringify(existingData));
       } else {
         // Add new submission
