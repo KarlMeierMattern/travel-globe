@@ -23,7 +23,7 @@ export default function Form() {
       files: formData?.files,
     });
     if (!result.success) {
-      const fieldErrors: { [key: string]: string } = {};
+      const fieldErrors: { [index: string]: string } = {}; // called an index signature in typescript
       result.error.errors.forEach((err) => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
@@ -129,7 +129,7 @@ export default function Form() {
     >
       <div className="flex flex-col justify-center w-full h-full gap-2">
         <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Location name
+          Location name blah!
         </p>
         <input
           className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
