@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "pnpm run build && vite preview",
     "deploy": "pnpm run build && wrangler deploy",
-    "test": "jest"
+    "test": "tsc --noEmit && jest"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.7",

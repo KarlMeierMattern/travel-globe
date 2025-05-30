@@ -129,7 +129,7 @@ export default function Form() {
     >
       <div className="flex flex-col justify-center w-full h-full gap-2">
         <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Location name blah!
+          Location name
         </p>
         <input
           className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
