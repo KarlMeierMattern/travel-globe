@@ -12,9 +12,11 @@ export default function Form() {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const result = formSchema.safeParse({
       locationName: formData?.locationName,
       description: formData?.description,
@@ -23,11 +25,12 @@ export default function Form() {
       files: formData?.files,
     });
     if (!result.success) {
-      const fieldErrors: { [index: string]: string } = {}; // called an index signature in typescript
+      const fieldErrors: { [index: string]: string } = {};
       result.error.errors.forEach((err) => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
+      setIsSubmitting(false);
       return;
     }
     setErrors({});
@@ -97,8 +100,10 @@ export default function Form() {
     };
 
     // Process files and store everything
-    processFiles().then(() => {
+    try {
+      await processFiles();
       console.log("Form submitted successfully");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setIsSubmitted(true);
       setFormData({
         locationName: "",
@@ -107,7 +112,11 @@ export default function Form() {
         latitude: "",
         files: [],
       });
-    });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,9 +232,10 @@ export default function Form() {
           ))}
         <button
           type="submit"
-          className="bg-blue-500 text-white p-2 rounded mt-4 cursor-pointer"
+          disabled={isSubmitting}
+          className="bg-blue-500 text-white p-2 rounded mt-4 cursor-pointer disabled:bg-gray-500"
         >
-          Add
+          {isSubmitting ? "Submitting..." : "Add"}
         </button>
       </div>
     </form>
