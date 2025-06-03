@@ -2,7 +2,11 @@ import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import Form from "./Form";
-import type { Label, Picture, FormSubmission } from "../utils/types";
+import type { Label, Picture } from "../utils/types";
+import { supabase } from "../lib/supabase";
+import type { Database } from "../utils/database.types";
+
+type Image = Database["public"]["Tables"]["images"]["Row"];
 
 export default function GlobeComponent() {
   const globeRef = useRef<HTMLDivElement>(null);
@@ -24,18 +28,39 @@ export default function GlobeComponent() {
     myGlobe.backgroundImageUrl(
       "https://unpkg.com/three-globe/example/img/night-sky.png"
     );
-    const formData = JSON.parse(localStorage.getItem("formData") || "[]");
-    if (Array.isArray(formData) && formData.length > 0) {
-      myGlobe.labelsData(
-        formData.map((entry: FormSubmission) => ({
-          text: entry.locationName,
-          description: entry.description,
-          lat: Number(entry.latitude),
-          lng: Number(entry.longitude),
-          picture: entry.files,
-        }))
-      );
-    }
+
+    // Fetch data from Supabase
+    const fetchData = async () => {
+      const { data: locations, error: locationsError } = await supabase.from(
+        "locations"
+      ).select(`
+          *,
+          images (*)
+        `);
+
+      if (locationsError) {
+        console.error("Error fetching locations:", locationsError);
+        return;
+      }
+
+      if (locations && locations.length > 0) {
+        myGlobe.labelsData(
+          locations.map((location) => ({
+            text: location.location_name,
+            description: location.description,
+            lat: location.latitude,
+            lng: location.longitude,
+            picture: location.images.map((img: Image) => ({
+              name: img.name,
+              data: img.url,
+            })),
+          }))
+        );
+      }
+    };
+
+    fetchData();
+
     myGlobe.onLabelHover((label) =>
       setModalLabel(label ? (label as Label) : null)
     );

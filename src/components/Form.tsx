@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { formSchema } from "../utils/formSchema";
-import type { FormData, FormSubmission, FormSubmissions } from "../utils/types";
+import type { FormData } from "../utils/types";
+import { supabase } from "../lib/supabase";
+import LocationAutocomplete, {
+  type PlaceSuggestion,
+} from "./LocationAutocomplete";
 
 export default function Form() {
   const [formData, setFormData] = useState<FormData>({
@@ -14,16 +18,28 @@ export default function Form() {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const handleLocationSelect = (place: PlaceSuggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      locationName: place.display_name,
+      latitude: place.lat,
+      longitude: place.lon,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
+
     const result = formSchema.safeParse({
-      locationName: formData?.locationName,
-      description: formData?.description,
-      longitude: formData?.longitude,
-      latitude: formData?.latitude,
-      files: formData?.files,
+      locationName: formData.locationName.trim(),
+      description: formData.description.trim(),
+      longitude: formData.longitude.trim(),
+      latitude: formData.latitude.trim(),
+      files: formData.files,
     });
+
     if (!result.success) {
       const fieldErrors: { [index: string]: string } = {};
       result.error.errors.forEach((err) => {
@@ -33,77 +49,51 @@ export default function Form() {
       setIsSubmitting(false);
       return;
     }
-    setErrors({});
 
-    // Process files and store in localStorage
-    const processFiles = async () => {
-      const filePromises = formData.files.map(async (file) => {
-        const reader = new FileReader();
-        return new Promise<{ name: string; data: string }>((resolve) => {
-          reader.onload = () =>
-            resolve({
-              name: file.name,
-              data: reader.result as string,
-            });
-          reader.readAsDataURL(file);
+    try {
+      // 1. Insert location
+      const { data: location, error: locationError } = await supabase
+        .from("locations")
+        .insert({
+          location_name: formData.locationName.toLowerCase(),
+          description: formData.description.toLowerCase(),
+          latitude: Number(formData.latitude),
+          longitude: Number(formData.longitude),
+        })
+        .select()
+        .single();
+
+      if (locationError) throw locationError;
+
+      // 2. Upload images to Supabase Storage
+      const uploadPromises = formData.files.map(async (file) => {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${location.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("images")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // 3. Get public URL
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("images").getPublicUrl(filePath);
+
+        // 4. Insert image record
+        const { error: imageError } = await supabase.from("images").insert({
+          location_id: location.id,
+          name: file.name,
+          url: publicUrl,
         });
+
+        if (imageError) throw imageError;
       });
 
-      const processedFiles = await Promise.all(filePromises);
+      await Promise.all(uploadPromises);
 
-      // Get existing data from localStorage
-      let existingData: FormSubmissions;
-      try {
-        const storedData = localStorage.getItem("formData");
-        existingData = storedData ? JSON.parse(storedData) : [];
-        if (!Array.isArray(existingData)) {
-          existingData = [];
-        }
-      } catch (error) {
-        console.error("Error parsing localStorage data:", error);
-        existingData = [];
-      }
-
-      // Find if a submission with same lat/lng exists
-      const matchIdx = existingData.findIndex(
-        (entry) =>
-          entry.latitude === formData.latitude &&
-          entry.longitude === formData.longitude
-      );
-
-      if (matchIdx !== -1) {
-        // Merge images into existing entry
-        existingData[matchIdx].files = [
-          ...existingData[matchIdx].files,
-          ...processedFiles,
-        ];
-        existingData[matchIdx].timestamp = new Date().toISOString();
-        existingData[matchIdx].locationName =
-          formData.locationName.toLowerCase();
-        existingData[matchIdx].description = formData.description.toLowerCase();
-        localStorage.setItem("formData", JSON.stringify(existingData));
-      } else {
-        // Add new submission
-        const newSubmission: FormSubmission = {
-          locationName: formData.locationName.toLowerCase(),
-          description: formData.description.toLowerCase(),
-          longitude: formData.longitude,
-          latitude: formData.latitude,
-          files: processedFiles,
-          timestamp: new Date().toISOString(),
-        };
-        localStorage.setItem(
-          "formData",
-          JSON.stringify([...existingData, newSubmission])
-        );
-      }
-    };
-
-    // Process files and store everything
-    try {
-      await processFiles();
-      console.log("Form submitted successfully");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
       setIsSubmitted(true);
       setFormData({
         locationName: "",
@@ -114,6 +104,7 @@ export default function Form() {
       });
     } catch (error) {
       console.error("Error submitting form:", error);
+      setErrors({ submit: "Failed to submit form. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -140,17 +131,10 @@ export default function Form() {
         <p className="text-xl font-mono font-bold text-blue-950 mb-2">
           Location name
         </p>
-        <input
-          className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
-          type="text"
-          placeholder="Paris..."
-          value={formData?.locationName}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              locationName: e.target.value.toLowerCase(),
-            })
-          }
+        <LocationAutocomplete
+          value={formData.locationName}
+          onSelect={handleLocationSelect}
+          disabled={isSubmitting}
         />
         {errors.locationName && (
           <span className="text-red-500">{errors.locationName}</span>
