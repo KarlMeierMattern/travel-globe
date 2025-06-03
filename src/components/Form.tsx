@@ -51,48 +51,86 @@ export default function Form() {
     }
 
     try {
-      // 1. Insert location
-      const { data: location, error: locationError } = await supabase
+      // 1. Check if location exists
+      const { data: existingLocation, error: fetchError } = await supabase
         .from("locations")
-        .insert({
-          location_name: formData.locationName.toLowerCase(),
-          description: formData.description.toLowerCase(),
-          latitude: Number(formData.latitude),
-          longitude: Number(formData.longitude),
-        })
-        .select()
-        .single();
+        .select("*")
+        .eq("location_name", formData.locationName.toLowerCase())
+        .maybeSingle();
 
-      if (locationError) throw locationError;
+      let locationId: string;
+
+      if (fetchError) throw fetchError;
+
+      if (existingLocation) {
+        locationId = existingLocation.id;
+      } else {
+        // 2. Insert new location
+        const { data: newLocation, error: locationError } = await supabase
+          .from("locations")
+          .insert({
+            location_name: formData.locationName.toLowerCase(),
+            description: formData.description.toLowerCase(),
+            latitude: Number(formData.latitude),
+            longitude: Number(formData.longitude),
+          })
+          .select()
+          .single();
+
+        if (locationError) throw locationError;
+        locationId = newLocation.id;
+      }
 
       // 2. Upload images to Supabase Storage
       const uploadPromises = formData.files.map(async (file) => {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${location.id}/${fileName}`;
+        try {
+          // Validate file type
+          if (!file.type.startsWith("image/")) {
+            throw new Error(`Invalid file type: ${file.type}`);
+          }
 
-        const { error: uploadError } = await supabase.storage
-          .from("images")
-          .upload(filePath, file);
+          // Validate file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error("File size too large. Maximum size is 5MB");
+          }
 
-        if (uploadError) throw uploadError;
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${locationId}/${fileName}`;
 
-        // 3. Get public URL
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("images").getPublicUrl(filePath);
+          const { error: uploadError } = await supabase.storage
+            .from("images")
+            .upload(filePath, file);
 
-        // 4. Insert image record
-        const { error: imageError } = await supabase.from("images").insert({
-          location_id: location.id,
-          name: file.name,
-          url: publicUrl,
-        });
+          if (uploadError) throw uploadError;
 
-        if (imageError) throw imageError;
+          // 3. Get public URL
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("images").getPublicUrl(filePath);
+
+          // 4. Insert image record
+          const { error: imageError } = await supabase.from("images").insert({
+            location_id: locationId,
+            name: file.name,
+            url: publicUrl,
+          });
+
+          if (imageError) throw imageError;
+
+          return { success: true };
+        } catch (error) {
+          console.error(`Error uploading file ${file.name}:`, error);
+          return { success: false, error };
+        }
       });
 
-      await Promise.all(uploadPromises);
+      const results = await Promise.all(uploadPromises);
+      const failedUploads = results.filter((r) => !r.success);
+
+      if (failedUploads.length > 0) {
+        throw new Error(`${failedUploads.length} images failed to upload`);
+      }
 
       setIsSubmitted(true);
       setFormData({
@@ -150,7 +188,7 @@ export default function Form() {
           onChange={(e) =>
             setFormData({
               ...formData,
-              description: e.target.value.toLowerCase(),
+              description: e.target.value,
             })
           }
         />
@@ -209,10 +247,8 @@ export default function Form() {
         </label>
         {errors.files && <span className="text-red-500">{errors.files}</span>}
         {formData?.files.length > 0 &&
-          formData?.files.map((file) => (
-            <span key={file.name} className="block mt-1">
-              {file.name}
-            </span>
+          formData?.files.map((file, idx) => (
+            <span key={file.name + file.lastModified + idx}>{file.name}</span>
           ))}
         <button
           type="submit"
