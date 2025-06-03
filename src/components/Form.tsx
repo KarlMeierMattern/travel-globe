@@ -98,22 +98,24 @@ export default function Form() {
           const fileName = `${Math.random()}.${fileExt}`;
           const filePath = `${locationId}/${fileName}`;
 
+          // Save image: Upload binary image file to Supabase Storage bucket
           const { error: uploadError } = await supabase.storage
             .from("images")
             .upload(filePath, file);
 
           if (uploadError) throw uploadError;
 
-          // 3. Get public URL
+          // File is now stored and accessible via a URL, but there's no database record yet
           const {
             data: { publicUrl },
           } = supabase.storage.from("images").getPublicUrl(filePath);
 
-          // 4. Insert image record
+          // Insert image: Create a new row in images table
           const { error: imageError } = await supabase.from("images").insert({
             location_id: locationId,
             name: file.name,
             url: publicUrl,
+            description: formData.description,
           });
 
           if (imageError) throw imageError;
@@ -184,6 +186,7 @@ export default function Form() {
           className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
           type="text"
           placeholder="Paris in summer..."
+          maxLength={40}
           value={formData?.description}
           onChange={(e) =>
             setFormData({

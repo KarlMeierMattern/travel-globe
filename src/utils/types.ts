@@ -11,6 +11,7 @@ export type Label = {
 export type Picture = {
   name: string;
   data: string;
+  description: string;
 };
 
 export type FormData = {

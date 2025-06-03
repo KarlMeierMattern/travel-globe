@@ -42,6 +42,7 @@ export interface Database {
           location_id: string;
           name: string;
           url: string;
+          description: string;
         };
         Insert: {
           id?: string;
@@ -49,6 +50,7 @@ export interface Database {
           location_id: string;
           name: string;
           url: string;
+          description?: string;
         };
         Update: {
           id?: string;
@@ -56,6 +58,7 @@ export interface Database {
           location_id?: string;
           name?: string;
           url?: string;
+          description?: string;
         };
       };
     };
