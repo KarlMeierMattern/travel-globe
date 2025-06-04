@@ -41,7 +41,7 @@ describe("Form", () => {
 
   // Test form validation
   test("validates required fields", () => {
-    render(<Form />);
+    render(<Form modalIcon={false} setModalIcon={() => {}} />);
     const submitButton = screen.getByText("Add");
     fireEvent.click(submitButton);
 
@@ -61,7 +61,7 @@ describe("Form", () => {
 
   // Test file processing
   test("handles file upload", () => {
-    render(<Form />);
+    render(<Form modalIcon={false} setModalIcon={() => {}} />);
     const file = new File(["test"], "test.png", { type: "image/png" });
     const input = screen.getByLabelText(/Choose Image/i);
     fireEvent.change(input, { target: { files: [file] } });
@@ -70,7 +70,7 @@ describe("Form", () => {
 
   // Test localStorage merging
   test("merges submissions with same coordinates", async () => {
-    render(<Form />);
+    render(<Form modalIcon={false} setModalIcon={() => {}} />);
 
     // First submission
     fireEvent.change(screen.getByPlaceholderText("Paris..."), {
@@ -96,7 +96,7 @@ describe("Form", () => {
     await screen.findByText("Form submitted successfully");
 
     // Re-render the form for the second submission
-    render(<Form />);
+    render(<Form modalIcon={false} setModalIcon={() => {}} />);
 
     // Second submission with same coordinates
     fireEvent.change(screen.getByPlaceholderText("Paris..."), {
