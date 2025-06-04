@@ -1,12 +1,12 @@
 import Globe from "globe.gl";
 import { useRef, useEffect, useState } from "react";
-import Form from "./Form";
+import { supabase } from "../../db/supabase";
+import type { Database } from "../utils/database.types";
 import type { Label, Picture } from "../utils/types";
-import { supabase } from "../lib/supabase";
 import Card from "./Card";
 import Carousel from "./Carousel";
+import Form from "./Form";
 import FormIcon from "./FormIcon";
-import type { Database } from "../utils/database.types";
 
 type Image = Database["public"]["Tables"]["images"]["Row"];
 
@@ -100,16 +100,7 @@ export default function GlobeComponent() {
         handleNext={handleNext}
       />
       <FormIcon setModalIcon={setModalIcon} />
-      {modalIcon && (
-        <div className="fixed inset-0 z-50" onClick={() => setModalIcon(false)}>
-          <div
-            className="absolute top-20 right-8 bg-white p-6 rounded shadow pointer-events-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Form />
-          </div>
-        </div>
-      )}
+      <Form modalIcon={modalIcon} setModalIcon={setModalIcon} />
     </>
   );
 }

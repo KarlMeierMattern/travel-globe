@@ -2,7 +2,6 @@ export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
 
-    // API Routes
     if (url.pathname === "/api/hello") {
       return new Response(JSON.stringify({ message: "Hello from Worker!" }), {
         headers: { "Content-Type": "application/json" },

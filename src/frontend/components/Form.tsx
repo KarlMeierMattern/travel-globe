@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { formSchema } from "../utils/formSchema";
 import type { FormData } from "../utils/types";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../db/supabase";
 import LocationAutocomplete, {
   type PlaceSuggestion,
 } from "./LocationAutocomplete";
 
-export default function Form() {
+export default function Form({
+  modalIcon,
+  setModalIcon,
+}: {
+  modalIcon: boolean;
+  setModalIcon: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const [formData, setFormData] = useState<FormData>({
     locationName: "",
     description: "",
@@ -51,7 +57,7 @@ export default function Form() {
     }
 
     try {
-      // 1. Check if location exists
+      // Check if location exists
       const { data: existingLocation, error: fetchError } = await supabase
         .from("locations")
         .select("*")
@@ -65,7 +71,7 @@ export default function Form() {
       if (existingLocation) {
         locationId = existingLocation.id;
       } else {
-        // 2. Insert new location
+        // Insert new location
         const { data: newLocation, error: locationError } = await supabase
           .from("locations")
           .insert({
@@ -81,7 +87,7 @@ export default function Form() {
         locationId = newLocation.id;
       }
 
-      // 2. Upload images to Supabase Storage
+      // Upload images to Supabase Storage
       const uploadPromises = formData.files.map(async (file) => {
         try {
           // Validate file type
@@ -163,104 +169,119 @@ export default function Form() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className=" w-80 h-160 bg-white rounded-full font-mono"
-    >
-      <div className="flex flex-col justify-center w-full h-full gap-2">
-        <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Location name
-        </p>
-        <LocationAutocomplete
-          value={formData.locationName}
-          onSelect={handleLocationSelect}
-          disabled={isSubmitting}
-        />
-        {errors.locationName && (
-          <span className="text-red-500">{errors.locationName}</span>
-        )}
-        <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Add description
-        </p>
-        <input
-          className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
-          type="text"
-          placeholder="Paris in summer..."
-          maxLength={40}
-          value={formData?.description}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              description: e.target.value,
-            })
-          }
-        />
-        {errors.description && (
-          <span className="text-red-500">{errors.description}</span>
-        )}
-        <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Latitude
-        </p>
-        <input
-          className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
-          type="number"
-          step="any"
-          placeholder="Latitude"
-          value={formData?.latitude}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              latitude: e.target.value,
-            })
-          }
-        />
-        {errors.latitude && (
-          <span className="text-red-500">{errors.latitude}</span>
-        )}
-        <p className="text-xl font-mono font-bold text-blue-950 mb-2">
-          Longitude
-        </p>
-        <input
-          className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
-          type="number"
-          step="any"
-          placeholder="Longitude"
-          value={formData?.longitude}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              longitude: e.target.value,
-            })
-          }
-        />
-        {errors.longitude && (
-          <span className="text-red-500">{errors.longitude}</span>
-        )}
-        <label className="block w-full cursor-pointer mt-4">
-          <span className="bg-slate-500 text-white px-4 py-2 rounded">
-            Choose Image
-          </span>
-          <input
-            type="file"
-            className="hidden"
-            multiple
-            onChange={handleFileChange}
-            accept="image/*"
-          />
-        </label>
-        {errors.files && <span className="text-red-500">{errors.files}</span>}
-        {formData?.files.length > 0 &&
-          formData?.files.map((file, idx) => (
-            <span key={file.name + file.lastModified + idx}>{file.name}</span>
-          ))}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-blue-500 text-white p-2 rounded mt-4 cursor-pointer disabled:bg-gray-500"
-        >
-          {isSubmitting ? "Submitting..." : "Add"}
-        </button>
-      </div>
-    </form>
+    <>
+      {modalIcon && (
+        <div className="fixed inset-0 z-50" onClick={() => setModalIcon(false)}>
+          <div
+            className="absolute top-20 right-8 bg-white p-6 rounded shadow pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <form
+              onSubmit={handleSubmit}
+              className=" w-80 h-160 bg-white rounded-full font-mono"
+            >
+              <div className="flex flex-col justify-center w-full h-full gap-2">
+                <p className="text-xl font-mono font-bold text-blue-950 mb-2">
+                  Location name
+                </p>
+                <LocationAutocomplete
+                  value={formData.locationName}
+                  onSelect={handleLocationSelect}
+                  disabled={isSubmitting}
+                />
+                {errors.locationName && (
+                  <span className="text-red-500">{errors.locationName}</span>
+                )}
+                <p className="text-xl font-mono font-bold text-blue-950 mb-2">
+                  Add description
+                </p>
+                <input
+                  className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
+                  type="text"
+                  placeholder="Paris in summer..."
+                  maxLength={40}
+                  value={formData?.description}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      description: e.target.value,
+                    })
+                  }
+                />
+                {errors.description && (
+                  <span className="text-red-500">{errors.description}</span>
+                )}
+                <p className="text-xl font-mono font-bold text-blue-950 mb-2">
+                  Latitude
+                </p>
+                <input
+                  className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
+                  type="number"
+                  step="any"
+                  placeholder="Latitude"
+                  value={formData?.latitude}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      latitude: e.target.value,
+                    })
+                  }
+                />
+                {errors.latitude && (
+                  <span className="text-red-500">{errors.latitude}</span>
+                )}
+                <p className="text-xl font-mono font-bold text-blue-950 mb-2">
+                  Longitude
+                </p>
+                <input
+                  className="w-full h-1/12 mb-2 py-2 px-2 border-blue-950 border-2 rounded-lg"
+                  type="number"
+                  step="any"
+                  placeholder="Longitude"
+                  value={formData?.longitude}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      longitude: e.target.value,
+                    })
+                  }
+                />
+                {errors.longitude && (
+                  <span className="text-red-500">{errors.longitude}</span>
+                )}
+                <label className="block w-full cursor-pointer mt-4">
+                  <span className="bg-slate-500 text-white px-4 py-2 rounded">
+                    Choose Image
+                  </span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                </label>
+                {errors.files && (
+                  <span className="text-red-500">{errors.files}</span>
+                )}
+                {formData?.files.length > 0 &&
+                  formData?.files.map((file, idx) => (
+                    <span key={file.name + file.lastModified + idx}>
+                      {file.name}
+                    </span>
+                  ))}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-blue-500 text-white p-2 rounded mt-4 cursor-pointer disabled:bg-gray-500"
+                >
+                  {isSubmitting ? "Submitting..." : "Add"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
